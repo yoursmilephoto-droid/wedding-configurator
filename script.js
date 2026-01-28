@@ -1,4 +1,6 @@
 // script.js
+// Версия: Telegram Mini App (MainButton + sendData JSON) — фикс для inline onclick
+// Главное: функции toggleSelection/sendData доступны глобально, чтобы работали onclick в index.html
 
 // Безопасная инициализация Telegram WebApp
 const tg = window.Telegram?.WebApp;
@@ -20,18 +22,24 @@ const mapping = {
   check_party: "Банкет",
 };
 
-// Инициализация интерфейса
+// Инициализация интерфейса Telegram
 if (inTelegram) {
   tg.ready();
   tg.expand();
 
-  // Нативная кнопка Telegram
   tg.MainButton.setText("Готово");
   tg.MainButton.show();
-  tg.MainButton.disable(); // пока ничего не выбрано
+  tg.MainButton.disable(); // пока не выбрали
 
-  // Важно: обработчик вешаем один раз
-  tg.MainButton.onClick(() => sendData());
+  // Вешаем один обработчик
+  tg.MainButton.onClick(() => {
+    // guard: если вдруг Telegram клиент позволил нажать disabled
+    if (!Object.values(selectionState).some(Boolean)) {
+      tg.showAlert("Выберите хотя бы один пункт 🙂");
+      return;
+    }
+    sendData();
+  });
 
   // Скрываем HTML fallback кнопку, если она есть
   const fallbackBtn = document.getElementById("fallback_done");
@@ -39,31 +47,7 @@ if (inTelegram) {
 }
 
 /**
- * Переключение выбора карточки
- */
-function toggleSelection(id) {
-  if (!(id in selectionState)) return;
-
-  selectionState[id] = !selectionState[id];
-
-  const card =
-    document.getElementById(`card_${id}`) ||
-    document.querySelector(`[data-card-id="${id}"]`);
-
-  if (card) {
-    if (selectionState[id]) {
-      card.classList.add("selected");
-      tg?.HapticFeedback?.impactOccurred?.("light");
-    } else {
-      card.classList.remove("selected");
-    }
-  }
-
-  updateMainButton();
-}
-
-/**
- * Обновление состояния кнопки
+ * Обновление состояния кнопки "Готово"
  */
 function updateMainButton() {
   const hasAny = Object.values(selectionState).some(Boolean);
@@ -78,9 +62,33 @@ function updateMainButton() {
     }
   }
 
-  // Для теста в браузере можно включать/выключать fallback кнопку
+  // Fallback кнопка в браузере (если есть)
   const fb = document.getElementById("fallback_done");
-  if (fb) fb.disabled = !hasAny;
+  if (fb) {
+    fb.disabled = !hasAny;
+    fb.style.opacity = hasAny ? "1" : "0.6";
+  }
+}
+
+/**
+ * Переключение выбора карточки
+ * Вызывается из inline onclick в index.html: toggleSelection('check_morning')
+ */
+function toggleSelection(id) {
+  if (!(id in selectionState)) return;
+
+  selectionState[id] = !selectionState[id];
+
+  const card = document.getElementById(`card_${id}`);
+  if (card) {
+    card.classList.toggle("selected", selectionState[id]);
+    card.setAttribute("aria-pressed", selectionState[id] ? "true" : "false");
+  }
+
+  // лёгкая тактильная отдача
+  tg?.HapticFeedback?.selectionChanged?.();
+
+  updateMainButton();
 }
 
 /**
@@ -92,10 +100,8 @@ function sendData() {
     .map((key) => mapping[key]);
 
   if (selectedParts.length === 0) {
-    if (inTelegram) {
-      tg.showAlert("Выберите хотя бы один пункт 🙂");
-    }
-    return; // НЕ закрываем и НЕ молчим
+    if (inTelegram) tg.showAlert("Выберите хотя бы один пункт 🙂");
+    return;
   }
 
   const payload = JSON.stringify({
@@ -106,8 +112,9 @@ function sendData() {
 
   if (inTelegram) {
     tg.sendData(payload);
-    // Даем Telegram время сформировать update с web_app_data
-    setTimeout(() => tg.close(), 300);
+
+    // Маленькая пауза — чтобы Telegram успел сформировать update для бота
+    setTimeout(() => tg.close(), 250);
     return;
   }
 
@@ -116,21 +123,19 @@ function sendData() {
   alert("Выбранные части дня (JSON):\n" + payload);
 }
 
-/**
- * Привязка кликов к карточкам без inline onclick
- */
+// Сделать функции доступными для inline onclick
+window.toggleSelection = toggleSelection;
+window.sendData = sendData;
+
+// После загрузки DOM привести кнопку в корректное состояние
 document.addEventListener("DOMContentLoaded", () => {
-  // 1) если есть элементы с id card_check_...
-  Object.keys(selectionState).forEach((id) => {
-    const el =
-      document.getElementById(`card_${id}`) ||
-      document.querySelector(`[data-card-id="${id}"]`);
-    if (el && !el.getAttribute('onclick')) el.addEventListener("click", () => toggleSelection(id));
-  });
-
-  // 2) если есть fallback кнопка в браузере
-  const fb = document.getElementById("fallback_done");
-  if (fb && !inTelegram) fb.addEventListener("click", () => sendData());
-
   updateMainButton();
+
+  // Если есть fallback кнопка в браузере — подключаем
+  const fb = document.getElementById("fallback_done");
+  if (fb && !inTelegram) {
+    fb.addEventListener("click", () => sendData());
+    fb.disabled = true;
+    fb.style.opacity = "0.6";
+  }
 });
