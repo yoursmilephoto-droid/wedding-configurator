@@ -106,7 +106,8 @@ function sendData() {
 
   if (inTelegram) {
     tg.sendData(payload);
-    tg.close();
+    // Даем Telegram время сформировать update с web_app_data
+    setTimeout(() => tg.close(), 300);
     return;
   }
 
@@ -124,7 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const el =
       document.getElementById(`card_${id}`) ||
       document.querySelector(`[data-card-id="${id}"]`);
-    if (el) el.addEventListener("click", () => toggleSelection(id));
+    if (el && !el.getAttribute('onclick')) el.addEventListener("click", () => toggleSelection(id));
   });
 
   // 2) если есть fallback кнопка в браузере
