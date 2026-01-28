@@ -1,10 +1,7 @@
-// script.js (reliable sendData + diagnostics)
-// Compatible with inline onclick="toggleSelection('check_morning')" etc.
-
+// script.js
 const tg = window.Telegram?.WebApp;
 const inTelegram = !!tg;
 
-// Selection state
 const selectionState = {
   check_morning: false,
   check_ceremony: false,
@@ -12,7 +9,6 @@ const selectionState = {
   check_party: false,
 };
 
-// Mapping to canonical values for n8n/Notion
 const mapping = {
   check_morning: "Утро",
   check_ceremony: "Церемония",
@@ -20,103 +16,103 @@ const mapping = {
   check_party: "Банкет",
 };
 
-function hasAnySelection() {
-  return Object.values(selectionState).some(Boolean);
-}
-
 function updateMainButton() {
-  if (!inTelegram) return;
-  try {
+  const hasAny = Object.values(selectionState).some(Boolean);
+
+  if (inTelegram) {
     tg.MainButton.setText("Готово");
     tg.MainButton.show();
-    if (hasAnySelection()) tg.MainButton.enable();
-    else tg.MainButton.disable();
-  } catch (e) {
-    // Ignore UI errors on some clients
-    console.warn("MainButton update failed:", e);
+    hasAny ? tg.MainButton.enable() : tg.MainButton.disable();
   }
+
+  const fb = document.getElementById("fallback_done");
+  if (fb) fb.disabled = !hasAny;
 }
 
-// Expose for inline onclick in index.html
-window.toggleSelection = function toggleSelection(id) {
+function toggleSelection(id) {
   if (!(id in selectionState)) return;
 
   selectionState[id] = !selectionState[id];
 
   const card = document.getElementById(`card_${id}`);
-  if (card) {
-    card.classList.toggle("selected", selectionState[id]);
-    card.setAttribute("aria-pressed", selectionState[id] ? "true" : "false");
-  }
+  if (card) card.classList.toggle("selected", selectionState[id]);
 
-  // light haptic
-  try {
-    tg?.HapticFeedback?.selectionChanged?.();
-  } catch {}
+  if (inTelegram) tg.HapticFeedback?.selectionChanged?.();
 
   updateMainButton();
-};
+}
+
+// ВАЖНО: делаем глобальными, потому что в HTML у тебя inline onclick
+window.toggleSelection = toggleSelection;
+window.sendData = sendData;
 
 function buildPayload() {
-  const parts = Object.keys(selectionState)
+  const selectedParts = Object.keys(selectionState)
     .filter((k) => selectionState[k])
     .map((k) => mapping[k]);
 
-  return { parts, payload: JSON.stringify({ type: "day_parts", parts, v: 1 }) };
+  return {
+    selectedParts,
+    payload: JSON.stringify({ type: "day_parts", parts: selectedParts, v: 1 }),
+  };
 }
 
-// Expose sendData for debugging / optional html button
-window.sendData = function sendData() {
-  const { parts, payload } = buildPayload();
+function sendData() {
+  const { selectedParts, payload } = buildPayload();
 
-  if (inTelegram) {
-    if (!parts.length) {
-      // Never close silently — show why nothing happens
-      try { tg.showAlert("Выберите хотя бы один пункт 🙂"); } catch {}
+  if (!inTelegram) {
+    if (selectedParts.length === 0) {
+      alert("Выберите хотя бы один пункт 🙂");
       return;
     }
-
-    try {
-      tg.sendData(payload);
-    } catch (e) {
-      console.error("sendData failed:", e);
-      try { tg.showAlert("Не получилось отправить выбор. Попробуйте ещё раз."); } catch {}
-      return;
-    }
-
-    // Give Telegram time to form update with web_app_data (some clients need more)
-    setTimeout(() => {
-      try { tg.close(); } catch {}
-    }, 900);
-
+    console.log("Payload:", payload);
+    alert(payload);
     return;
   }
 
-  // Browser fallback
-  alert(payload);
-};
-
-// Init
-document.addEventListener("DOMContentLoaded", () => {
-  if (inTelegram) {
-    try {
-      tg.ready();
-      tg.expand();
-
-      // Bind once
-      tg.MainButton.onClick(() => window.sendData());
-
-      // Hide any HTML "Готово" button inside Telegram (optional)
-      const fallbackBtn =
-        document.getElementById("fallback_done") ||
-        [...document.querySelectorAll("button")].find(
-          (b) => (b.textContent || "").trim().toLowerCase() === "готово"
-        );
-      if (fallbackBtn) fallbackBtn.style.display = "none";
-    } catch (e) {
-      console.warn("Telegram init failed:", e);
-    }
+  if (selectedParts.length === 0) {
+    tg.showAlert("Выберите хотя бы один пункт 🙂");
+    return;
   }
 
+  // Диагностический алерт, чтобы 100% видеть, что кнопка реально сработала
+  tg.showAlert("Отправляю выбор в бот ✅", () => {
+    try {
+      tg.sendData(payload);
+    } catch (e) {
+      tg.showAlert("sendData упал: " + (e?.message || e));
+      return;
+    }
+
+    // Закрываем не мгновенно, чтобы Telegram успел сформировать update
+    setTimeout(() => tg.close(), 1200);
+  });
+}
+
+function bindMainButtonReliably() {
+  if (!inTelegram) return;
+
+  tg.ready();
+  tg.expand();
+
+  updateMainButton();
+
+  // 1) Новый способ
+  if (tg.MainButton?.onClick) {
+    tg.MainButton.onClick(() => sendData());
+  }
+
+  // 2) Старый/альтернативный способ (на части клиентов надежнее)
+  if (tg.onEvent) {
+    tg.onEvent("mainButtonClicked", () => sendData());
+  }
+
+  // В Telegram прячем HTML кнопку
+  const fallbackBtn = document.getElementById("fallback_done");
+  if (fallbackBtn) fallbackBtn.style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  bindMainButtonReliably();
   updateMainButton();
 });
