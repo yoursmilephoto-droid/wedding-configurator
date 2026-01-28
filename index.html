@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Конфигуратор свадебного дня</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Preload fonts if needed, for now using system stack -->
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">Выбор формата</h1>
+            <p class="subtitle">Отметьте части дня, которые важно сохранить</p>
+        </header>
+
+        <main class="selection-grid">
+            <div class="card" id="card_check_morning" onclick="toggleSelection('check_morning')">
+                <div class="card-content">
+                    <div class="card-icon">🏨</div>
+                    <div class="card-text">
+                        <span class="card-title">Утро в отеле</span>
+                        <span class="card-subtitle">Сборы</span>
+                    </div>
+                </div>
+                <div class="checkbox-indicator">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="card" id="card_check_ceremony" onclick="toggleSelection('check_ceremony')">
+                <div class="card-content">
+                    <div class="card-icon">💍</div>
+                    <div class="card-text">
+                        <span class="card-title">Церемония</span>
+                        <span class="card-subtitle">ЗАГС / Выездная</span>
+                    </div>
+                </div>
+                <div class="checkbox-indicator">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="card" id="card_check_walk" onclick="toggleSelection('check_walk')">
+                <div class="card-content">
+                    <div class="card-icon">📸</div>
+                    <div class="card-text">
+                        <span class="card-title">Прогулка</span>
+                        <span class="card-subtitle">Фотосессия</span>
+                    </div>
+                </div>
+                <div class="checkbox-indicator">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="card" id="card_check_party" onclick="toggleSelection('check_party')">
+                <div class="card-content">
+                    <div class="card-icon">🥂</div>
+                    <div class="card-text">
+                        <span class="card-title">Ужин</span>
+                        <span class="card-subtitle">Вечеринка / Банкет</span>
+                    </div>
+                </div>
+                <div class="checkbox-indicator">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </div>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <button class="action-button" id="done_btn" onclick="sendData()">Готово</button>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

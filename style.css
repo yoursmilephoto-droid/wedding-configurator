@@ -1,0 +1,209 @@
+:root {
+    --bg-color: #F2F2F7;
+    /* Apple System Background Gray */
+    --card-bg: #FFFFFF;
+    --text-primary: #000000;
+    --text-secondary: #8E8E93;
+    /* Apple Secondary Label */
+    --accent-color: #007AFF;
+    /* Apple System Blue */
+    --accent-text: #FFFFFF;
+    --border-radius-card: 14px;
+    /* Classic iOS card radius */
+    --border-radius-btn: 12px;
+    --transition-speed: 0.3s;
+    --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    margin: 0;
+    padding: 0;
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.container {
+    padding: 20px;
+    max-width: 480px;
+    margin: 0 auto;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    margin: 24px 0 32px 0;
+    padding: 0 4px;
+}
+
+.title {
+    font-size: 34px;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    letter-spacing: -1px;
+}
+
+.subtitle {
+    font-size: 17px;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.3;
+}
+
+.selection-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+
+.card {
+    background: var(--card-bg);
+    border-radius: var(--border-radius-card);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+    box-shadow: var(--shadow-soft);
+    border: none;
+    position: relative;
+    user-select: none;
+}
+
+.card:active {
+    transform: scale(0.96);
+    background-color: #F2F2F7;
+}
+
+.card.selected {
+    /* Apple style: Selection highlights can be subtle or use the accent color */
+    box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+.card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.card-icon {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #F2F2F7;
+    border-radius: 10px;
+}
+
+.card-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.card-title {
+    font-size: 17px;
+    font-weight: 600;
+}
+
+.card-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.checkbox-indicator {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #D1D1D6;
+    /* Apple Separator/Border Gray */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.checkbox-indicator svg {
+    width: 14px;
+    height: 14px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.card.selected .checkbox-indicator {
+    background-color: var(--accent-color);
+    border-color: var(--accent-color);
+}
+
+.card.selected .checkbox-indicator svg {
+    opacity: 1;
+    transform: scale(1);
+    color: #FFFFFF;
+}
+
+.footer {
+    padding-top: 24px;
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+    position: sticky;
+    bottom: 0;
+    background: rgba(242, 242, 247, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.action-button {
+    width: 100%;
+    background-color: var(--accent-color);
+    color: #FFFFFF;
+    border: none;
+    border-radius: var(--border-radius-btn);
+    padding: 17px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+}
+
+.action-button:active {
+    opacity: 0.7;
+}
+
+/* Dark Mode (True Apple Dark) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg-color: #000000;
+        --card-bg: #1C1C1E;
+        --text-primary: #FFFFFF;
+        --text-secondary: #8E8E93;
+        --accent-color: #0A84FF;
+        /* Apple Dark Mode Blue */
+        --shadow-soft: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .card-icon {
+        background: #2C2C2E;
+    }
+
+    .checkbox-indicator {
+        border-color: #3A3A3C;
+    }
+
+    .footer {
+        background: rgba(0, 0, 0, 0.7);
+    }
+}
