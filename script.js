@@ -1,4 +1,4 @@
-// script.js
+// script.js (production, no debug popups)
 const tg = window.Telegram?.WebApp;
 const inTelegram = !!tg;
 
@@ -42,10 +42,6 @@ function toggleSelection(id) {
   updateMainButton();
 }
 
-// ВАЖНО: делаем глобальными, потому что в HTML у тебя inline onclick
-window.toggleSelection = toggleSelection;
-window.sendData = sendData;
-
 function buildPayload() {
   const selectedParts = Object.keys(selectionState)
     .filter((k) => selectionState[k])
@@ -75,44 +71,39 @@ function sendData() {
     return;
   }
 
-  // Диагностический алерт, чтобы 100% видеть, что кнопка реально сработала
-  tg.showAlert("Отправляю выбор в бот ✅", () => {
-    try {
-      tg.sendData(payload);
-    } catch (e) {
-      tg.showAlert("sendData упал: " + (e?.message || e));
-      return;
-    }
+  try {
+    tg.sendData(payload);
+  } catch (e) {
+    // редкая история, но лучше показать, чем молчать
+    tg.showAlert("Не получилось отправить выбор. Попробуйте ещё раз 🙂");
+    return;
+  }
 
-    // Закрываем не мгновенно, чтобы Telegram успел сформировать update
-    setTimeout(() => tg.close(), 1200);
-  });
+  // чуть подождём, чтобы Telegram успел сформировать update
+  setTimeout(() => tg.close(), 900);
 }
 
-function bindMainButtonReliably() {
+// ВАЖНО: делаем глобальными, потому что в HTML inline onclick
+window.toggleSelection = toggleSelection;
+window.sendData = sendData;
+
+function bindMainButton() {
   if (!inTelegram) return;
 
   tg.ready();
   tg.expand();
-
   updateMainButton();
 
-  // 1) Новый способ
-  if (tg.MainButton?.onClick) {
-    tg.MainButton.onClick(() => sendData());
-  }
+  // Два способа, чтобы работало на разных клиентах
+  if (tg.MainButton?.onClick) tg.MainButton.onClick(() => sendData());
+  if (tg.onEvent) tg.onEvent("mainButtonClicked", () => sendData());
 
-  // 2) Старый/альтернативный способ (на части клиентов надежнее)
-  if (tg.onEvent) {
-    tg.onEvent("mainButtonClicked", () => sendData());
-  }
-
-  // В Telegram прячем HTML кнопку
+  // Прячем HTML кнопку, если она есть
   const fallbackBtn = document.getElementById("fallback_done");
   if (fallbackBtn) fallbackBtn.style.display = "none";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindMainButtonReliably();
+  bindMainButton();
   updateMainButton();
 });
